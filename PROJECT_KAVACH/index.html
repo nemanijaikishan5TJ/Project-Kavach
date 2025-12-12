@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT KAVACH | DRDO Secure Comms</title>
+    <style>
+        :root {
+            --primary: #00ff41; /* Hacker Green */
+            --dark: #0d0d0d;
+            --panel: #1a1a1a;
+            --danger: #ff3333;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: #ccc;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1, h2 {
+            color: var(--primary);
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+        }
+
+        .header-logo {
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            justify-content: center;
+        }
+
+        .card {
+            background-color: var(--panel);
+            border: 1px solid #333;
+            padding: 20px;
+            border-radius: 5px;
+            width: 45%;
+            min-width: 300px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        input[type="text"], input[type="password"], textarea, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            background: #000;
+            border: 1px solid #444;
+            color: #fff;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: #000;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-family: inherit;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #00cc33;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        .preview-area {
+            margin-top: 15px;
+            text-align: center;
+            min-height: 150px;
+            border: 1px dashed #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #000;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 200px;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 0.9em;
+            min-height: 20px;
+        }
+        
+        .success { color: var(--primary); font-weight: bold; }
+        .error { color: var(--danger); font-weight: bold; }
+        .processing { color: #ffff00; font-style: italic; }
+
+        a.download-btn {
+            display: none;
+            color: var(--dark);
+            background: var(--primary);
+            text-decoration: none;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-logo">
+        <h1>Project Kavach</h1>
+        <p>Gemini Launchpad: CSE Edition | DRDO Secure Channel</p>
+    </div>
+
+    <div class="container">
+        <!-- ENCODE SECTION -->
+        <div class="card">
+            <h2>1. Encrypt & Hide</h2>
+            <p>Sender Interface (Field Operative)</p>
+
+            <label>Secret Battle Plan (Message):</label>
+            <textarea id="msgInput" rows="3" placeholder="Enter confidential data..."></textarea>
+
+            <label>Encryption Password:</label>
+            <input type="password" id="encPass" placeholder="Shared Secret Key">
+
+            <label>Upload Dummy Image (Cover):</label>
+            <input type="file" id="coverImage" accept="image/png, image/jpeg">
+
+            <div class="preview-area" id="previewEncode">
+                <span>Image Preview</span>
+            </div>
+
+            <button onclick="processEncoding()">Encrypt & Hide Data</button>
+            <div id="encodeStatus" class="status"></div>
+            
+            <!-- Download Link -->
+            <a id="downloadLink" class="download-btn">Download Secure Image</a>
+        </div>
+
+        <!-- DECODE SECTION -->
+        <div class="card">
+            <h2>2. Decrypt & Reveal</h2>
+            <p>Receiver Interface (Base Command)</p>
+
+            <label>Upload Secure Image:</label>
+            <input type="file" id="secureImage" accept="image/png">
+
+            <label>Decryption Password:</label>
+            <input type="password" id="decPass" placeholder="Shared Secret Key">
+
+            <div class="preview-area" id="previewDecode">
+                <span>Image Preview</span>
+            </div>
+
+            <button onclick="processDecoding()">Decrypt & Read</button>
+
+            <label>Decrypted Intelligence:</label>
+            <textarea id="decryptedOutput" rows="3" readonly placeholder="Waiting for decryption..."></textarea>
+            <div id="decodeStatus" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:5000"; // Location of your Python Backend
+
+        // --- ENCODING: Send Data to Python ---
+        async function processEncoding() {
+            const msg = document.getElementById('msgInput').value;
+            const pass = document.getElementById('encPass').value;
+            const fileInput = document.getElementById('coverImage');
+            const status = document.getElementById('encodeStatus');
+            const downloadLink = document.getElementById('downloadLink');
+            const previewDiv = document.getElementById('previewEncode');
+
+            if (!msg || !pass || !fileInput.files[0]) {
+                status.innerHTML = "<span class='error'>Error: All fields are required.</span>";
+                return;
+            }
+
+            status.innerHTML = "<span class='processing'>Processing on Server...</span>";
+            downloadLink.style.display = "none";
+
+            const formData = new FormData();
+            formData.append('message', msg);
+            formData.append('password', pass);
+            formData.append('image', fileInput.files[0]);
+
+            try {
+                const response = await fetch(`${API_URL}/encode`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || "Server Error");
+                }
+
+                // The server returns the image as a Blob
+                const blob = await response.blob();
+                const imageUrl = URL.createObjectURL(blob);
+
+                // Show success and update download link
+                status.innerHTML = "<span class='success'>Success: Encrypted by Python Backend.</span>";
+                
+                // Update Preview with the result image
+                previewDiv.innerHTML = `<img src="${imageUrl}" style="border: 2px solid #00ff41;">`;
+
+                downloadLink.href = imageUrl;
+                downloadLink.download = "kavach_secure_output.png";
+                downloadLink.style.display = "block";
+                downloadLink.innerText = ">> DOWNLOAD SECURE IMAGE <<";
+
+            } catch (error) {
+                console.error(error);
+                status.innerHTML = `<span class='error'>Failed: ${error.message}</span>`;
+            }
+        }
+
+        // --- DECODING: Send Image to Python ---
+        async function processDecoding() {
+            const fileInput = document.getElementById('secureImage');
+            const pass = document.getElementById('decPass').value;
+            const output = document.getElementById('decryptedOutput');
+            const status = document.getElementById('decodeStatus');
+
+            if (!pass || !fileInput.files[0]) {
+                status.innerHTML = "<span class='error'>Error: Image and password required.</span>";
+                return;
+            }
+
+            status.innerHTML = "<span class='processing'>Decrypting on Server...</span>";
+            output.value = "";
+
+            const formData = new FormData();
+            formData.append('password', pass);
+            formData.append('image', fileInput.files[0]);
+
+            try {
+                const response = await fetch(`${API_URL}/decode`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Decryption Failed");
+                }
+
+                output.value = data.secret_message;
+                status.innerHTML = "<span class='success'>Success: Message Decrypted from Server.</span>";
+
+            } catch (error) {
+                console.error(error);
+                output.value = "";
+                status.innerHTML = `<span class='error'>Error: ${error.message}</span>`;
+            }
+        }
+
+        // --- PREVIEW HANDLING (Client Side Only) ---
+        document.getElementById('coverImage').addEventListener('change', function() {
+            previewImage(this, 'previewEncode');
+        });
+        document.getElementById('secureImage').addEventListener('change', function() {
+            previewImage(this, 'previewDecode');
+        });
+
+        function previewImage(input, elementId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById(elementId).innerHTML = '<img src="' + e.target.result + '">';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+</body>
+</html>
